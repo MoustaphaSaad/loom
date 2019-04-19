@@ -19,12 +19,12 @@ ifeq ($(config),debug_x86)
   INCLUDES += -I../../include -I../../mn/include
   FORCE_INCLUDE +=
   ALL_CPPFLAGS += $(CPPFLAGS) -MMD -MP $(DEFINES) $(INCLUDES)
-  ALL_CFLAGS += $(CFLAGS) $(ALL_CPPFLAGS) -m32 -fPIC -g -Wall -Wextra
-  ALL_CXXFLAGS += $(CXXFLAGS) $(ALL_CPPFLAGS) -m32 -fPIC -g -Wall -Wextra -std=c++17
+  ALL_CFLAGS += $(CFLAGS) $(ALL_CPPFLAGS) -m32 -fPIC -g -Wall -Wextra -fsanitize=thread
+  ALL_CXXFLAGS += $(CXXFLAGS) $(ALL_CPPFLAGS) -m32 -fPIC -g -Wall -Wextra -std=c++17 -fsanitize=thread
   ALL_RESFLAGS += $(RESFLAGS) $(DEFINES) $(INCLUDES)
   LIBS += ../../bin/x86/debug/libmnd.so
   LDDEPS += ../../bin/x86/debug/libmnd.so
-  ALL_LDFLAGS += $(LDFLAGS) -L/usr/lib32 -Wl,-rpath,'$$ORIGIN' -m32 -shared -Wl,-soname=libloomd.so -pthread
+  ALL_LDFLAGS += $(LDFLAGS) -L/usr/lib32 -Wl,-rpath,'$$ORIGIN' -m32 -shared -Wl,-soname=libloomd.so -fsanitize=thread -pthread
   LINKCMD = $(CXX) -o "$@" $(OBJECTS) $(RESOURCES) $(ALL_LDFLAGS) $(LIBS)
   define PREBUILDCMDS
   endef
@@ -46,12 +46,12 @@ ifeq ($(config),debug_x64)
   INCLUDES += -I../../include -I../../mn/include
   FORCE_INCLUDE +=
   ALL_CPPFLAGS += $(CPPFLAGS) -MMD -MP $(DEFINES) $(INCLUDES)
-  ALL_CFLAGS += $(CFLAGS) $(ALL_CPPFLAGS) -m64 -fPIC -g -Wall -Wextra
-  ALL_CXXFLAGS += $(CXXFLAGS) $(ALL_CPPFLAGS) -m64 -fPIC -g -Wall -Wextra -std=c++17
+  ALL_CFLAGS += $(CFLAGS) $(ALL_CPPFLAGS) -m64 -fPIC -g -Wall -Wextra -fsanitize=thread
+  ALL_CXXFLAGS += $(CXXFLAGS) $(ALL_CPPFLAGS) -m64 -fPIC -g -Wall -Wextra -std=c++17 -fsanitize=thread
   ALL_RESFLAGS += $(RESFLAGS) $(DEFINES) $(INCLUDES)
   LIBS += ../../bin/x64/debug/libmnd.so
   LDDEPS += ../../bin/x64/debug/libmnd.so
-  ALL_LDFLAGS += $(LDFLAGS) -L/usr/lib64 -Wl,-rpath,'$$ORIGIN' -m64 -shared -Wl,-soname=libloomd.so -pthread
+  ALL_LDFLAGS += $(LDFLAGS) -L/usr/lib64 -Wl,-rpath,'$$ORIGIN' -m64 -shared -Wl,-soname=libloomd.so -fsanitize=thread -pthread
   LINKCMD = $(CXX) -o "$@" $(OBJECTS) $(RESOURCES) $(ALL_LDFLAGS) $(LIBS)
   define PREBUILDCMDS
   endef
@@ -73,12 +73,12 @@ ifeq ($(config),release_x86)
   INCLUDES += -I../../include -I../../mn/include
   FORCE_INCLUDE +=
   ALL_CPPFLAGS += $(CPPFLAGS) -MMD -MP $(DEFINES) $(INCLUDES)
-  ALL_CFLAGS += $(CFLAGS) $(ALL_CPPFLAGS) -m32 -O2 -fPIC -Wall -Wextra
-  ALL_CXXFLAGS += $(CXXFLAGS) $(ALL_CPPFLAGS) -m32 -O2 -fPIC -Wall -Wextra -std=c++17
+  ALL_CFLAGS += $(CFLAGS) $(ALL_CPPFLAGS) -m32 -O2 -fPIC -Wall -Wextra -fsanitize=thread
+  ALL_CXXFLAGS += $(CXXFLAGS) $(ALL_CPPFLAGS) -m32 -O2 -fPIC -Wall -Wextra -std=c++17 -fsanitize=thread
   ALL_RESFLAGS += $(RESFLAGS) $(DEFINES) $(INCLUDES)
   LIBS += ../../bin/x86/release/libmn.so
   LDDEPS += ../../bin/x86/release/libmn.so
-  ALL_LDFLAGS += $(LDFLAGS) -L/usr/lib32 -Wl,-rpath,'$$ORIGIN' -m32 -shared -Wl,-soname=libloom.so -s -pthread
+  ALL_LDFLAGS += $(LDFLAGS) -L/usr/lib32 -Wl,-rpath,'$$ORIGIN' -m32 -shared -Wl,-soname=libloom.so -s -fsanitize=thread -pthread
   LINKCMD = $(CXX) -o "$@" $(OBJECTS) $(RESOURCES) $(ALL_LDFLAGS) $(LIBS)
   define PREBUILDCMDS
   endef
@@ -100,12 +100,12 @@ ifeq ($(config),release_x64)
   INCLUDES += -I../../include -I../../mn/include
   FORCE_INCLUDE +=
   ALL_CPPFLAGS += $(CPPFLAGS) -MMD -MP $(DEFINES) $(INCLUDES)
-  ALL_CFLAGS += $(CFLAGS) $(ALL_CPPFLAGS) -m64 -O2 -fPIC -Wall -Wextra
-  ALL_CXXFLAGS += $(CXXFLAGS) $(ALL_CPPFLAGS) -m64 -O2 -fPIC -Wall -Wextra -std=c++17
+  ALL_CFLAGS += $(CFLAGS) $(ALL_CPPFLAGS) -m64 -O2 -fPIC -Wall -Wextra -fsanitize=thread
+  ALL_CXXFLAGS += $(CXXFLAGS) $(ALL_CPPFLAGS) -m64 -O2 -fPIC -Wall -Wextra -std=c++17 -fsanitize=thread
   ALL_RESFLAGS += $(RESFLAGS) $(DEFINES) $(INCLUDES)
   LIBS += ../../bin/x64/release/libmn.so
   LDDEPS += ../../bin/x64/release/libmn.so
-  ALL_LDFLAGS += $(LDFLAGS) -L/usr/lib64 -Wl,-rpath,'$$ORIGIN' -m64 -shared -Wl,-soname=libloom.so -s -pthread
+  ALL_LDFLAGS += $(LDFLAGS) -L/usr/lib64 -Wl,-rpath,'$$ORIGIN' -m64 -shared -Wl,-soname=libloom.so -s -fsanitize=thread -pthread
   LINKCMD = $(CXX) -o "$@" $(OBJECTS) $(RESOURCES) $(ALL_LDFLAGS) $(LIBS)
   define PREBUILDCMDS
   endef
@@ -119,7 +119,8 @@ all: prebuild prelink $(TARGET)
 endif
 
 OBJECTS := \
-	$(OBJDIR)/Dummy.o \
+	$(OBJDIR)/Group.o \
+	$(OBJDIR)/Loom.o \
 
 RESOURCES := \
 
@@ -178,7 +179,10 @@ else
 $(OBJECTS): | $(OBJDIR)
 endif
 
-$(OBJDIR)/Dummy.o: ../../src/loom/Dummy.cpp
+$(OBJDIR)/Group.o: ../../src/loom/Group.cpp
+	@echo $(notdir $<)
+	$(SILENT) $(CXX) $(ALL_CXXFLAGS) $(FORCE_INCLUDE) -o "$@" -MF "$(@:%.o=%.d)" -c "$<"
+$(OBJDIR)/Loom.o: ../../src/loom/Loom.cpp
 	@echo $(notdir $<)
 	$(SILENT) $(CXX) $(ALL_CXXFLAGS) $(FORCE_INCLUDE) -o "$@" -MF "$(@:%.o=%.d)" -c "$<"
 
