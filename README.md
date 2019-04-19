@@ -6,7 +6,7 @@ Loom is a minimal job queue library that i use and helps me in my "Pure Coding" 
 
 You can communicate with me through e-mail moustapha.saad.abdelhamed@gmail.com
 
-The library is licensed under BSD-3 and you can find it here [MN](https://github.com/MoustaphaSaad/loom)
+The library is licensed under BSD-3 and you can find it here [loom](https://github.com/MoustaphaSaad/loom)
 
 Loom is divided into two main layers the group layer and loom layer, Let's get a quick tour of it's content.
 
