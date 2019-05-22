@@ -22,10 +22,10 @@ namespace loom
 		else
 		{
 			T* mid = begin + count / 2;
-			Request* left = request_async(l, [l, begin, mid, func]{
+			Request* left = request_async(l, [l, begin, mid, func](Request*){
 				map(l, begin, mid, func);
 			});
-			Request* right = request_async(l, [l, mid, end, func]{
+			Request* right = request_async(l, [l, mid, end, func](Request*){
 				map(l, mid, end, func);
 			});
 
@@ -60,10 +60,10 @@ namespace loom
 			T* mid = begin + count / 2;
 			T left_init = init;
 			T right_init = init;
-			Request* left = request_async(l, [l, begin, mid, func, &left_init]{
+			Request* left = request_async(l, [l, begin, mid, func, &left_init](Request*){
 				left_init = reduce(l, begin, mid, left_init, func);
 			});
-			Request* right = request_async(l, [l, mid, end, func, &right_init]{
+			Request* right = request_async(l, [l, mid, end, func, &right_init](Request*){
 				right_init = reduce(l, mid, end, right_init, func);
 			});
 

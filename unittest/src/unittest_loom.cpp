@@ -59,13 +59,13 @@ TEST_CASE("loom simple atomic increment")
 	{
 		if(i % 3 == 0)
 		{
-			request_sync(l, [&counter](){
+			request_sync(l, [&counter](Request*){
 				counter++;
 			});
 		}
 		else
 		{
-			buf_push(reqs, request_async(l, [&counter](){
+			buf_push(reqs, request_async(l, [&counter](Request*){
 				counter++;
 			}));
 		}
