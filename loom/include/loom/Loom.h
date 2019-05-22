@@ -68,7 +68,7 @@ namespace loom
 			:proc(std::forward<TProc>(p))
 		{}
 
-		void run() override { proc(); }
+		void run() override { proc(this); }
 	};
 
 	typedef Job Waitgroup;
