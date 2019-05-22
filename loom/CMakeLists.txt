@@ -22,6 +22,10 @@ add_library(loom
 
 add_library(MoustaphaSaad::loom ALIAS loom)
 
+# make it reflect the same structure as the one on disk
+source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${HEADER_FILES})
+source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${SOURCE_FILES})
+
 
 # Windows specfic flags to enable W variations of winapi
 if(WIN32)
