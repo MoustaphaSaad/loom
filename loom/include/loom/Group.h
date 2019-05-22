@@ -2,6 +2,8 @@
 
 #include "loom/Exports.h"
 
+#include <stddef.h>
+
 namespace loom
 {
 	//Worker
