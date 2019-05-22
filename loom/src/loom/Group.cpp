@@ -15,17 +15,14 @@ namespace loom
 {
 	constexpr static size_t JOB_POOL_SIZE = 32;
 
-	struct IWorker;
-	struct IGroup;
-
 	struct IJob
 	{
 		Job_Func func;
 		void* arg1;
 		void* arg2;
 		const char* name;
-		IWorker* worker;
-		IJob* parent;
+		Worker worker;
+		Job parent;
 		std::atomic<int> unfinished;
 		std::atomic<bool> done;
 		std::atomic<bool> added_to_gc;
@@ -38,25 +35,25 @@ namespace loom
 		Pool job_pool;
 		Mutex job_pool_mtx;
 
-		Ring<IJob*> q;
+		Ring<Job> q;
 		Mutex q_mtx;
 
-		Buf<IJob*> gc;
+		Buf<Job> gc;
 		Mutex gc_mtx;
 
 		Thread thread;
 
-		IGroup* group;
+		Group group;
 
 		std::atomic<bool> group_ready;
 		std::atomic<bool> is_running;
 		std::atomic<bool> do_gc;
 	};
-	thread_local IWorker* LOCAL_WORKER = nullptr;
+	thread_local Worker LOCAL_WORKER = nullptr;
 
 	struct IGroup
 	{
-		Buf<IWorker*> workers;
+		Buf<Worker> workers;
 		std::atomic<uint32_t> last_steal;
 		std::atomic<uint32_t> last_push;
 	};
@@ -68,7 +65,7 @@ namespace loom
 
 		Main_Worker_Wrapper()
 		{
-			allocator_push(clib_allocator);
+			allocator_push(memory::clib());
 				self.name = "Main Worker";
 				self.job_pool = pool_new(sizeof(IJob), JOB_POOL_SIZE * 2);
 				self.job_pool_mtx = mutex_new("Main Worker Job Pool Mutex");
@@ -91,7 +88,7 @@ namespace loom
 
 		~Main_Worker_Wrapper()
 		{
-			allocator_push(clib_allocator);
+			allocator_push(memory::clib());
 				self.is_running = false;
 				pool_free(self.job_pool);
 				mutex_free(self.job_pool_mtx);
@@ -115,10 +112,10 @@ namespace loom
 	}
 
 	inline static void
-	_job_finish(IJob* self)
+	_job_finish(Job self)
 	{
 		assert(self->unfinished > 0);
-		IJob* parent = self->parent;
+		Job parent = self->parent;
 		if(self->unfinished.fetch_sub(1) == 1)
 		{
 			assert(self->unfinished == 0);
@@ -128,19 +125,19 @@ namespace loom
 	}
 
 	inline static void
-	_job_do(IJob* self)
+	_job_do(Job self)
 	{
 		assert(self->done == false);
 		if(self->func)
 			self->func(self->arg1, self->arg2);
 		_job_finish(self);
-		allocator_tmp_free();
+		mn::memory::tmp()->free_all();
 	}
 
-	inline static IJob*
-	_worker_pop(IWorker* self)
+	inline static Job
+	_worker_pop(Worker self)
 	{
-		IJob* res = nullptr;
+		Job res = nullptr;
 
 		//try popping a job off the q
 		mutex_lock(self->q_mtx);
@@ -153,7 +150,7 @@ namespace loom
 
 		if(res == nullptr && self->group)
 		{
-			IWorker* other = (IWorker*)group_steal_next((Group)self->group);
+			Worker other = group_steal_next(self->group);
 			if(other != self)
 			{
 				mutex_lock(other->q_mtx);
@@ -170,13 +167,13 @@ namespace loom
 	}
 
 	inline static void
-	_worker_gc(IWorker* self)
+	_worker_gc(Worker self)
 	{
 		mutex_lock(self->gc_mtx);
 		if(self->gc.count >= JOB_POOL_SIZE)
 		{
 			mutex_lock(self->job_pool_mtx);
-				buf_remove_if(self->gc, [self](IJob* job){
+				buf_remove_if(self->gc, [self](Job job){
 					assert(self == job->worker);
 					if(job->done == true)
 					{
@@ -193,12 +190,12 @@ namespace loom
 	}
 
 	inline static void
-	_worker_idle(IWorker* self)
+	_worker_idle(Worker self)
 	{
 		if (self->do_gc)
 			_worker_gc(self);
 
-		if(IJob* job = _worker_pop(self))
+		if(Job job = _worker_pop(self))
 			_job_do(job);
 		else
 			_yield();
@@ -207,7 +204,7 @@ namespace loom
 	static void
 	_worker_main(void* arg)
 	{
-		IWorker* self = (IWorker*)arg;
+		Worker self = (Worker)arg;
 		LOCAL_WORKER = self;
 
 		while(self->group_ready == false && self->group != nullptr)
@@ -225,19 +222,19 @@ namespace loom
 	Worker
 	worker_new(const char* name, Group g)
 	{
-		IWorker* self = alloc<IWorker>();
+		Worker self = alloc<IWorker>();
 		self->name = name;
 
 		self->job_pool = pool_new(sizeof(IJob), JOB_POOL_SIZE * 2);
 		self->job_pool_mtx = mutex_new("Worker Job Pool Mutex");
 
-		self->q = ring_new<IJob*>();
+		self->q = ring_new<Job>();
 		self->q_mtx = mutex_new("Worker Queue Mutex");
 
-		self->gc = buf_new<IJob*>();
+		self->gc = buf_new<Job>();
 		self->gc_mtx = mutex_new("Worker GC Mutex");
 
-		self->group = (IGroup*)g;
+		self->group = g;
 
 		self->group_ready = false;
 		self->is_running = true;
@@ -245,11 +242,11 @@ namespace loom
 
 		self->thread = thread_new(_worker_main, self, name);
 
-		return (Worker)self;
+		return self;
 	}
 
 	inline static void
-	_worker_stop(IWorker* self)
+	_worker_stop(Worker self)
 	{
 		self->is_running = false;
 
@@ -258,7 +255,7 @@ namespace loom
 	}
 
 	inline static void
-	_worker_free(IWorker* self)
+	_worker_free(Worker self)
 	{
 		pool_free(self->job_pool);
 		mutex_free(self->job_pool_mtx);
@@ -273,9 +270,8 @@ namespace loom
 	}
 
 	void
-	worker_free(Worker worker)
+	worker_free(Worker self)
 	{
-		IWorker* self = (IWorker*)worker;
 		_worker_stop(self);
 		_worker_free(self);
 	}
@@ -283,13 +279,13 @@ namespace loom
 	Worker
 	worker_local()
 	{
-		return (Worker)LOCAL_WORKER;
+		return LOCAL_WORKER;
 	}
 
 	Worker
 	worker_main()
 	{
-		return (Worker)&MAIN_WORKER.self;
+		return &MAIN_WORKER.self;
 	}
 
 	void
@@ -302,20 +298,18 @@ namespace loom
 	}
 
 	void
-	worker_gc(Worker worker)
+	worker_gc(Worker self)
 	{
-		IWorker* self = (IWorker*)worker;
 		self->do_gc = true;
 	}
 
 
 	//Job
 	Job
-	job_new(Worker worker, Job_Func func, void* arg1, void* arg2, const char* name, Job parent)
+	job_new(Worker self, Job_Func func, void* arg1, void* arg2, const char* name, Job parent)
 	{
-		IWorker* self = (IWorker*)worker;
 		mutex_lock(self->job_pool_mtx);
-			IJob* res = (IJob*)pool_get(self->job_pool);
+			Job res = (Job)pool_get(self->job_pool);
 		mutex_unlock(self->job_pool_mtx);
 
 		res->func = func;
@@ -323,19 +317,18 @@ namespace loom
 		res->arg2 = arg2;
 		res->name = name;
 		res->worker = self;
-		res->parent = (IJob*)parent;
+		res->parent = parent;
 		if(res->parent) ++res->parent->unfinished;
 		res->unfinished = 1;
 		res->done = false;
 		res->added_to_gc = false;
 
-		return (Job) res;
+		return res;
 	}
 
 	void
-	job_free(Job job)
+	job_free(Job self)
 	{
-		IJob* self = (IJob*)job;
 		if (self->added_to_gc.exchange(true) == false)
 		{
 			mutex_lock(self->worker->gc_mtx);
@@ -345,26 +338,23 @@ namespace loom
 	}
 
 	Job
-	job_schedule(Job job)
+	job_schedule(Job self)
 	{
-		IJob* self = (IJob*)job;
 		mutex_lock(self->worker->q_mtx);
 			ring_push_back(self->worker->q, self);
 		mutex_unlock(self->worker->q_mtx);
-		return job;
+		return self;
 	}
 
 	bool
-	job_done(Job job)
+	job_done(Job self)
 	{
-		IJob* self = (IJob*)job;
 		return self->done;
 	}
 
 	void
-	job_wait(Job job)
+	job_wait(Job self)
 	{
-		IJob* self = (IJob*)job;
 		if(LOCAL_WORKER)
 		{
 			while(self->done == false)
@@ -385,34 +375,27 @@ namespace loom
 		if(worker_count == 0)
 			worker_count = std::thread::hardware_concurrency();
 
-		IGroup* self = alloc<IGroup>();
-		self->workers = buf_new<IWorker*>();
+		Group self = alloc<IGroup>();
+		self->workers = buf_new<Worker>();
 		self->last_push = 0;
 		self->last_steal = 0;
 
 		for(size_t i = 0; i < worker_count; ++i)
-		{
-			IWorker* worker = (IWorker*)worker_new(name, (Group)self);
-			buf_push(self->workers, worker);
-		}
+			buf_push(self->workers, worker_new(name, self));
 
 		for (size_t i = 0; i < worker_count; ++i)
-		{
 			self->workers[i]->group_ready = true;
-		}
 
-		return (Group)self;
+		return self;
 	}
 
 	void
-	group_free(Group group)
+	group_free(Group self)
 	{
-		IGroup* self = (IGroup*)group;
-
-		for(IWorker* worker: self->workers)
+		for(Worker worker: self->workers)
 			_worker_stop(worker);
 
-		for(IWorker* worker: self->workers)
+		for(Worker worker: self->workers)
 			_worker_free(worker);
 
 		buf_free(self->workers);
@@ -421,27 +404,23 @@ namespace loom
 	}
 
 	void
-	group_gc(Group group)
+	group_gc(Group self)
 	{
-		IGroup* self = (IGroup*)group;
-
-		for(IWorker* worker: self->workers)
-			worker_gc((Worker)worker);
+		for(Worker worker: self->workers)
+			worker_gc(worker);
 	}
 
 	Worker
-	group_steal_next(Group group)
+	group_steal_next(Group self)
 	{
-		IGroup* self = (IGroup*)group;
 		uint32_t ix = self->last_steal.fetch_add(1) % self->workers.count;
-		return (Worker)self->workers[ix];
+		return self->workers[ix];
 	}
 
 	Worker
-	group_push_next(Group group)
+	group_push_next(Group self)
 	{
-		IGroup* self = (IGroup*)group;
 		uint32_t ix = self->last_push.fetch_add(1) % self->workers.count;
-		return (Worker)self->workers[ix];
+		return self->workers[ix];
 	}
 }

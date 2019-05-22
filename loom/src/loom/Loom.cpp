@@ -9,7 +9,7 @@ using namespace mn;
 
 namespace loom
 {
-	constexpr static size_t REQUEST_POOL_SIZE = 32;
+	constexpr static size_t REQUEST_POOL_SIZE = 1024;
 
 	struct ILoom
 	{
@@ -23,19 +23,18 @@ namespace loom
 	Loom
 	loom_new(const char* name, size_t worker_count)
 	{
-		ILoom* self = alloc<ILoom>();
+		Loom self = alloc<ILoom>();
 		self->group = group_new(name, worker_count);
 		self->pool = pool_new(SMALL_REQUEST_SIZE, REQUEST_POOL_SIZE * 2);
 		self->pool_mtx = mutex_new(name);
 		self->gc = buf_new<Request*>();
 		self->gc_mtx = mutex_new(name);
-		return (Loom)self;
+		return self;
 	}
 
 	void
-	loom_free(Loom loom)
+	loom_free(Loom self)
 	{
-		ILoom* self = (ILoom*)loom;
 		group_free(self->group);
 
 		for(Request* r: self->gc)
@@ -52,16 +51,14 @@ namespace loom
 	}
 
 	Group
-	loom_group(Loom loom)
+	loom_group(Loom self)
 	{
-		ILoom* self = (ILoom*)loom;
 		return self->group;
 	}
 
 	void*
-	loom_alloc(Loom loom)
+	loom_alloc(Loom self)
 	{
-		ILoom* self = (ILoom*)loom;
 		mutex_lock(self->pool_mtx);
 			void* res = pool_get(self->pool);
 		mutex_unlock(self->pool_mtx);
@@ -69,9 +66,8 @@ namespace loom
 	}
 
 	void
-	loom_free(Loom loom, Request* request)
+	loom_free(Loom self, Request* request)
 	{
-		ILoom* self = (ILoom*)loom;
 		if (request->added_to_gc.exchange(true) == false)
 		{
 			mutex_lock(self->gc_mtx);
@@ -81,9 +77,8 @@ namespace loom
 	}
 
 	void
-	loom_gc(Loom loom)
+	loom_gc(Loom self)
 	{
-		ILoom* self = (ILoom*)loom;
 		mutex_lock(self->gc_mtx);
 		if(self->gc.count >= REQUEST_POOL_SIZE)
 		{
