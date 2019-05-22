@@ -12,12 +12,12 @@ namespace loom
 {
 	constexpr static size_t SMALL_REQUEST_SIZE = 128;
 	//Loom
-	MS_HANDLE(Loom);
+	typedef struct ILoom* Loom;
 
-	API_LOOM Loom
+	LOOM_EXPORT Loom
 	loom_new(const char* name, size_t worker_count);
 
-	API_LOOM void
+	LOOM_EXPORT void
 	loom_free(Loom loom);
 
 	inline static void
@@ -26,18 +26,18 @@ namespace loom
 		loom_free(loom);
 	}
 
-	API_LOOM Group
+	LOOM_EXPORT Group
 	loom_group(Loom loom);
 
-	API_LOOM void*
+	LOOM_EXPORT void*
 	loom_alloc(Loom loom);
 
 	struct Request;
 
-	API_LOOM void
+	LOOM_EXPORT void
 	loom_free(Loom loom, Request* request);
 
-	API_LOOM void
+	LOOM_EXPORT void
 	loom_gc(Loom loom);
 
 	//Request
@@ -71,27 +71,30 @@ namespace loom
 		void run() override { proc(); }
 	};
 
-	MS_HANDLE(Request_Group);
+	typedef Job Waitgroup;
 
-	inline static Request_Group
-	request_group_new(Loom loom)
+	inline static Waitgroup
+	waitgroup_new(Loom loom)
 	{
-		Group g = loom_group(loom);
-		Job j = job_new(group_push_next(g), nullptr, nullptr, nullptr, "request group", nullptr);
-		return (Request_Group)j;
+		return job_new(
+			group_push_next(loom_group(loom)),
+			nullptr,
+			nullptr,
+			nullptr,
+			"Waitgroup",
+			nullptr
+		);
 	}
 
 	inline static void
-	request_group_free(Request_Group request_group)
+	waitgroup_free(Waitgroup self)
 	{
-		Job self = (Job)request_group;
 		job_free(self);
 	}
 
 	inline static void
-	request_group_wait(Request_Group request_group)
+	waitgroup_wait(Waitgroup self)
 	{
-		Job self = (Job)request_group;
 		job_schedule(self);
 		job_wait(self);
 		job_free(self);
@@ -160,7 +163,7 @@ namespace loom
 
 	template<typename TProc>
 	inline static void
-	request_async(Loom loom, Request_Group group, TProc&& proc)
+	request_async(Loom loom, Waitgroup group, TProc&& proc)
 	{
 		loom_gc(loom);
 
@@ -181,7 +184,7 @@ namespace loom
 		}
 		request->added_to_gc = false;
 		Group g = loom_group(loom);
-		request->job = job_new(group_push_next(g), _request_run, request, nullptr, "async request", (Job)group);
+		request->job = job_new(group_push_next(g), _request_run, request, nullptr, "async request", group);
 		job_schedule(request->job);
 		request_free(request);
 	}
