@@ -33,10 +33,18 @@ if(WIN32)
 		PRIVATE
 			OS_WINDOWS=1
 	)
+	target_compile_options(loom
+		PRIVATE
+			/WX /W4
+	)
 elseif(UNIX)
 	target_compile_definitions(loom
 		PRIVATE
 			OS_LINUX=1
+	)
+	target_compile_options(loom
+		PRIVATE
+			-Wall -Werror
 	)
 endif()
 
