@@ -1,5 +1,7 @@
 # Loom Tour
 
+[![Build Status](https://travis-ci.com/MoustaphaSaad/loom.svg?branch=master)](https://travis-ci.com/MoustaphaSaad/loom)
+
 19, Apr, 2019
 
 Loom is a minimal job queue library that i use and helps me in my "Pure Coding" style.
