@@ -78,11 +78,3 @@ target_link_libraries(loom
 	PUBLIC
 		MoustaphaSaad::mn
 )
-
-# output directory
-set_target_properties(loom
-	PROPERTIES
-	ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
-	LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
-	RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
-)

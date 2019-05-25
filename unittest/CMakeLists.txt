@@ -21,11 +21,3 @@ target_include_directories(unittest
 	PRIVATE
 		${CMAKE_CURRENT_SOURCE_DIR}/doctest
 )
-
-# output directory
-set_target_properties(unittest
-	PROPERTIES
-	ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
-	LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
-	RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
-)
