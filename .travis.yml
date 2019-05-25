@@ -29,10 +29,10 @@ matrix:
         - cd Debug
         - cmake .. -DBUILD_SHARED_LIBS=ON -DCMAKE_BUILD_TYPE=Debug
         - cmake --build . --config Debug
-        - ./bin/unittest
+        - ./bin/Debug/unittest
         - cd ..
         - mkdir Release
         - cd Release
         - cmake .. -DBUILD_SHARED_LIBS=ON -DCMAKE_BUILD_TYPE=Release
         - cmake --build . --config Release
-        - ./bin/unittest
+        - ./bin/Release/unittest
