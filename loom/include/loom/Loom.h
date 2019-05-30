@@ -155,10 +155,10 @@ namespace loom
 		job_wait(self->job);
 	}
 
-	inline static void
+	inline static bool
 	request_done(Request* self)
 	{
-		job_done(self->job);
+		return job_done(self->job);
 	}
 
 	template<typename TProc>
