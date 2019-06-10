@@ -26,6 +26,9 @@ namespace loom
 		loom_free(loom);
 	}
 
+	LOOM_EXPORT Loom
+	loom_main();
+
 	LOOM_EXPORT Group
 	loom_group(Loom loom);
 
