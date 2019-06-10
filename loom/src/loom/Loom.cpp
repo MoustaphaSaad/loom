@@ -42,6 +42,10 @@ namespace loom
 			allocator_push(memory::clib());
 				group_free(self.group);
 
+				for (Request* r : self.gc)
+					if (r->small_req == false)
+						mn::free(r);
+
 				pool_free(self.pool);
 				mutex_free(self.pool_mtx);
 
