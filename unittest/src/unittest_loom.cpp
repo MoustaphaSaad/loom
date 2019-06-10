@@ -72,7 +72,10 @@ TEST_CASE("loom simple atomic increment")
 	}
 
 	for(Request* r: reqs)
+	{
+		request_wait(r);
 		request_free(r);
+	}
 
 	CHECK(counter == 100);
 
