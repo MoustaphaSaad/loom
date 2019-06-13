@@ -27,7 +27,7 @@ namespace loom
 		Main_Loom_Wrapper()
 		{
 			allocator_push(memory::clib());
-				self.group = group_new("Main Loom", 0);
+				self.group = nullptr;
 
 				self.pool = pool_new(SMALL_REQUEST_SIZE, REQUEST_POOL_SIZE * 2);
 				self.pool_mtx = mutex_new("Main Loom request pool mutex");
@@ -40,8 +40,6 @@ namespace loom
 		~Main_Loom_Wrapper()
 		{
 			allocator_push(memory::clib());
-				group_free(self.group);
-
 				for (Request* r : self.gc)
 					if (r->small_req == false)
 						mn::free(r);
@@ -147,6 +145,7 @@ namespace loom
 			});
 		}
 		mutex_unlock(self->gc_mtx);
-		group_gc(self->group);
+		if(loom_group(self))
+			group_gc(self->group);
 	}
 }
