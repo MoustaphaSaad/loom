@@ -39,11 +39,11 @@ namespace loom
 
 		~Main_Loom_Wrapper()
 		{
-			allocator_push(memory::clib());
-				for (Request* r : self.gc)
-					if (r->small_req == false)
-						mn::free(r);
+			for (Request* r : self.gc)
+				if (r->small_req == false)
+					mn::free(r);
 
+			allocator_push(memory::clib());
 				pool_free(self.pool);
 				mutex_free(self.pool_mtx);
 
@@ -52,7 +52,7 @@ namespace loom
 			allocator_pop();
 		}
 	};
-	static Main_Loom_Wrapper MAIN_LOOM;
+
 
 	Loom
 	loom_new(const char* name, size_t worker_count)
@@ -87,6 +87,7 @@ namespace loom
 	Loom
 	loom_main()
 	{
+		static Main_Loom_Wrapper MAIN_LOOM;
 		return &MAIN_LOOM.self;
 	}
 
