@@ -27,6 +27,7 @@ namespace loom
 		Main_Loom_wrapper()
 		{
 			allocator_push(memory::clib());
+
 			self.group = nullptr;
 
 			self.pool = pool_new(SMALL_REQUEST_SIZE, REQUEST_POOL_SIZE * 2);
@@ -145,7 +146,8 @@ namespace loom
 			});
 		}
 		mutex_unlock(self->gc_mtx);
-		if(loom_group(self))
+
+		if(self != loom_main())
 			group_gc(self->group);
 	}
 }
