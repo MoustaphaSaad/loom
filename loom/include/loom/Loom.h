@@ -26,6 +26,9 @@ namespace loom
 		loom_free(loom);
 	}
 
+	LOOM_EXPORT Loom
+	loom_main();
+
 	LOOM_EXPORT Group
 	loom_group(Loom loom);
 
@@ -124,7 +127,11 @@ namespace loom
 
 		request->added_to_gc = false;
 		Group g = loom_group(loom);
-		request->job = job_new(group_push_next(g), _request_run, request, nullptr, "async request", nullptr);
+		if(g)
+			request->job = job_new(group_push_next(g), _request_run, request, nullptr, "async request", nullptr);
+		else
+			request->job = job_new(worker_main(), _request_run, request, nullptr, "async request", nullptr);
+
 		job_schedule(request->job);
 		return request;
 	}
@@ -137,7 +144,11 @@ namespace loom
 
 		Lambda_Request<TProc> request(std::forward<TProc>(proc));
 		Group g = loom_group(loom);
-		request.job = job_new(group_push_next(g), _request_run, &request, nullptr, "sync request", nullptr);
+		if(g)
+			request.job = job_new(group_push_next(g), _request_run, &request, nullptr, "sync request", nullptr);
+		else
+			request.job = job_new(worker_main(), _request_run, &request, nullptr, "sync request", nullptr);
+
 		job_schedule(request.job);
 		job_wait(request.job);
 		job_free(request.job);
@@ -184,7 +195,11 @@ namespace loom
 		}
 		request->added_to_gc = false;
 		Group g = loom_group(loom);
-		request->job = job_new(group_push_next(g), _request_run, request, nullptr, "async request", group);
+		if(g)
+			request->job = job_new(group_push_next(g), _request_run, request, nullptr, "async request", group);
+		else
+			request->job = job_new(worker_main(), _request_run, request, nullptr, "async request", group);
+
 		job_schedule(request->job);
 		request_free(request);
 	}

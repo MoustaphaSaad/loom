@@ -101,7 +101,6 @@ namespace loom
 			allocator_pop();
 		}
 	};
-	static Main_Worker_Wrapper MAIN_WORKER;
 
 
 
@@ -285,6 +284,7 @@ namespace loom
 	Worker
 	worker_main()
 	{
+		static Main_Worker_Wrapper MAIN_WORKER;
 		return &MAIN_WORKER.self;
 	}
 

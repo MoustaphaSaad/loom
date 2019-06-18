@@ -20,6 +20,39 @@ namespace loom
 		Mutex gc_mtx;
 	};
 
+	struct Main_Loom_wrapper
+	{
+		ILoom self;
+
+		Main_Loom_wrapper()
+		{
+			allocator_push(memory::clib());
+			self.group = nullptr;
+
+			self.pool = pool_new(SMALL_REQUEST_SIZE, REQUEST_POOL_SIZE * 2);
+			self.pool_mtx = mutex_new("Main Loom request pool mutex");
+
+			self.gc = buf_new<Request*>();
+			self.gc_mtx = mutex_new("Main Loom GC Mutex");
+			allocator_pop();
+		}
+
+		~Main_Loom_wrapper()
+		{
+			for (Request* r : self.gc)
+				if (r->small_req == false)
+					mn::free(r);
+
+			allocator_push(memory::clib());
+				pool_free(self.pool);
+				mutex_free(self.pool_mtx);
+
+				buf_free(self.gc);
+				mutex_free(self.gc_mtx);
+			allocator_pop();
+		}
+	};
+
 	Loom
 	loom_new(const char* name, size_t worker_count)
 	{
@@ -48,6 +81,13 @@ namespace loom
 		mutex_free(self->gc_mtx);
 
 		free(self);
+	}
+
+	Loom
+	loom_main()
+	{
+		static Main_Loom_wrapper MAIN_LOOM;
+		return &MAIN_LOOM.self;
 	}
 
 	Group
@@ -105,6 +145,7 @@ namespace loom
 			});
 		}
 		mutex_unlock(self->gc_mtx);
-		group_gc(self->group);
+		if(loom_group(self))
+			group_gc(self->group);
 	}
 }
