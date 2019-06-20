@@ -147,7 +147,7 @@ namespace loom
 		}
 		mutex_unlock(self->gc_mtx);
 
-		if(self != loom_main())
+		if(self->group)
 			group_gc(self->group);
 	}
 }
