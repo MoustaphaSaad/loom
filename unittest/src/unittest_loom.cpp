@@ -157,3 +157,48 @@ TEST_CASE("multiple group interaction case")
 	group_free(multi);
 	group_free(single);
 }
+
+TEST_CASE("main loom simple atomic increment")
+{
+	Buf<Request*> reqs = buf_new<Request*>();
+	std::atomic<size_t> counter = 0;
+	for (size_t i = 0; i < 100; ++i)
+	{
+		if (i % 3 == 0)
+		{
+			request_sync(loom_main(), [&counter](Request*) {
+				counter++;
+			});
+		}
+		else
+		{
+			buf_push(reqs, request_async(loom_main(), [&counter](Request*) {
+				counter++;
+			}));
+		}
+	}
+
+	for (Request* r : reqs)
+	{
+		request_wait(r);
+		request_free(r);
+	}
+
+	CHECK(counter == 100);
+
+	buf_free(reqs);
+}
+
+TEST_CASE("main loom reduce array sum")
+{
+	Buf<int64_t> nums = buf_new<int64_t>();
+	for (int64_t i = 1; i <= 100000; ++i)
+		buf_push(nums, i);
+
+	int64_t res = reduce(loom_main(), nums, int64_t(0),
+		[](int64_t a, int64_t b) {return a + b; });
+
+	CHECK(res == 5000050000);
+
+	buf_free(nums);
+}
